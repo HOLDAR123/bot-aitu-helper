@@ -15,7 +15,6 @@ export class Bot {
     this.bot.use(session());
   }
 
-  /** Регистрирует все переданные команды */
   public registerCommands(commands: Command[]): void {
     this.commands = commands;
     for (const command of this.commands) {
@@ -32,7 +31,6 @@ export class Bot {
     console.log(`Зарегистрировано handler-ов: ${this.handlers.length}`);
   }
 
-  /** Стартует бота: удаляет возможный webhook, подключает catch и запускает polling */
   public async init(): Promise<void> {
     console.log('Инициализация бота...');
 
