@@ -8,19 +8,35 @@ export class BackHandler extends Handler {
         this.bot.action("MENU_BACK", this.backToMainMenu.bind(this));
     }
 
-    private async backToMainMenu(ctx: Context) {
+    private async backToMainMenu(ctx: Context): Promise<void> {
         const userId = ctx.from?.id;
-        if (!userId) return;
+        if (!userId) {
+            console.warn("Попытка вернуться в главное меню без userId");
+            return;
+        }
 
         try {
+            // Удаляем текущее сообщение с кнопкой
             if (ctx.callbackQuery?.message?.message_id) {
-                await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+                try {
+                    await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+                } catch (deleteError) {
+                    console.debug(`Не удалось удалить сообщение ${ctx.callbackQuery.message.message_id}:`, deleteError);
+                }
             }
-        } catch {}
 
-        const lang = getUserLanguage(userId) || "ru";
-        await MainMenuService.showMenu(ctx, lang);
+            const lang = getUserLanguage(userId) || "ru";
+            await MainMenuService.showMenu(ctx, lang);
 
-        await ctx.answerCbQuery();
+            await ctx.answerCbQuery();
+            
+        } catch (error) {
+            console.error(`Ошибка при возврате в главное меню для пользователя ${userId}:`, error);
+            try {
+                await ctx.answerCbQuery("Произошла ошибка при возврате в главное меню");
+            } catch (cbError) {
+                console.error("Не удалось ответить на callback query:", cbError);
+            }
+        }
     }
 }

@@ -1,15 +1,32 @@
 {
   "name": "telegram-bot-aitu",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Умный Telegram бот для абитуриентов Astana IT University с поддержкой ИИ",
+  "main": "dist/app.js",
   "scripts": {
     "build": "tsc",
     "start": "node ./dist/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsc && node ./dist/app.js",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "rebuild": "npm run clean && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-config": "node test-bot.js",
+    "debug-sessions": "npm run build && node debug-sessions.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
   },
+  "keywords": [
+    "telegram",
+    "bot",
+    "aitu",
+    "ai",
+    "openai",
+    "typescript",
+    "telegraf"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@types/dotenv": "^8.2.3",
@@ -23,7 +40,13 @@
     "dotenv": "^16.5.0",
     "i18next": "^25.2.1",
     "i18next-fs-backend": "^2.6.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "openai": "^5.1.1",
     "string-similarity": "^4.0.4",
     "telegraf": "^4.16.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

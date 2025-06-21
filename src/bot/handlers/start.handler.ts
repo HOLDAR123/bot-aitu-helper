@@ -11,17 +11,43 @@ export class StartHandler extends Handler {
 
     private async handleStartCommand(ctx: Context) {
         const userId = ctx.from?.id;
-        if (!userId) return;
+        if (!userId) {
+            console.warn("Попытка запуска команды /start без userId");
+            return;
+        }
 
         try {
+            // Удаляем команду /start если возможно
             if (ctx.message?.message_id) {
-                await ctx.deleteMessage(ctx.message.message_id);
+                try {
+                    await ctx.deleteMessage(ctx.message.message_id);
+                } catch (deleteError) {
+                    // Игнорируем ошибки удаления сообщения
+                    console.debug(`Не удалось удалить сообщение ${ctx.message.message_id}:`, deleteError);
+                }
             }
-        } catch {}
 
-        const lang = getUserLanguage(userId);
+            const lang = getUserLanguage(userId);
 
-        if (!lang) {
+            if (!lang) {
+                await this.showLanguageSelection(ctx, userId);
+                return;
+            }
+
+            await MainMenuService.showMenu(ctx, lang);
+            
+        } catch (error) {
+            console.error(`Ошибка в handleStartCommand для пользователя ${userId}:`, error);
+            try {
+                await ctx.reply("Произошла ошибка при запуске бота. Попробуйте позже.");
+            } catch (replyError) {
+                console.error("Не удалось отправить сообщение об ошибке:", replyError);
+            }
+        }
+    }
+
+    private async showLanguageSelection(ctx: Context, userId: number): Promise<void> {
+        try {
             await sendCleanMessage(
                 ctx,
                 userId,
@@ -34,9 +60,9 @@ export class StartHandler extends Handler {
                     ],
                 ])
             );
-            return;
+        } catch (error) {
+            console.error(`Ошибка при показе выбора языка для пользователя ${userId}:`, error);
+            throw error;
         }
-
-        await MainMenuService.showMenu(ctx, lang);
     }
 }

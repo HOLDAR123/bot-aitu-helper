@@ -9,14 +9,29 @@ export class ChecklistHandler extends Handler {
         this.bot.action("MENU_CHECKLIST", this.showChecklist.bind(this));
     }
 
-    private async showChecklist(ctx: Context) {
+    private async showChecklist(ctx: Context): Promise<void> {
         const userId = ctx.from?.id;
-        if (!userId) return;
+        if (!userId) {
+            console.warn("Попытка показать чек-лист без userId");
+            return;
+        }
 
-        const lang = getUserLanguage(userId) || "ru";
-        const t = i18n.getFixedT(lang);
+        try {
+            // Принудительно удаляем сообщение с главным меню
+            if (ctx.callbackQuery?.message?.message_id) {
+                try {
+                    console.debug(`ChecklistHandler: удаляем сообщение главного меню ${ctx.callbackQuery.message.message_id}`);
+                    await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+                    console.debug(`ChecklistHandler: сообщение главного меню удалено`);
+                } catch (deleteError) {
+                    console.debug(`Не удалось удалить сообщение главного меню:`, deleteError);
+                }
+            }
 
-        const message = `
+            const lang = getUserLanguage(userId) || "ru";
+            const t = i18n.getFixedT(lang);
+
+            const message = `
 📋 <b>${t("checklist_title")}</b>
 
 📎 ${t("checklist_item_id")}
@@ -28,16 +43,25 @@ export class ChecklistHandler extends Handler {
 📝 <i>${t("checklist_footer")}</i>
 `.trim();
 
-        await sendCleanMessage(
-            ctx,
-            userId,
-            message,
-            Markup.inlineKeyboard([
-                [Markup.button.callback(t("back"), "MENU_BACK")]
-            ]),
-            true
-        );
+            await sendCleanMessage(
+                ctx,
+                userId,
+                message,
+                Markup.inlineKeyboard([
+                    [Markup.button.callback(t("back"), "MENU_BACK")]
+                ]),
+                true
+            );
 
-        await ctx.answerCbQuery();
+            await ctx.answerCbQuery();
+            
+        } catch (error) {
+            console.error(`Ошибка при показе чек-листа для пользователя ${userId}:`, error);
+            try {
+                await ctx.answerCbQuery("Произошла ошибка при показе чек-листа");
+            } catch (cbError) {
+                console.error("Не удалось ответить на callback query:", cbError);
+            }
+        }
     }
 }

@@ -9,14 +9,29 @@ export class CalendarHandler extends Handler {
         this.bot.action("MENU_CALENDAR", this.showCalendar.bind(this));
     }
 
-    private async showCalendar(ctx: Context) {
+    private async showCalendar(ctx: Context): Promise<void> {
         const userId = ctx.from?.id;
-        if (!userId) return;
+        if (!userId) {
+            console.warn("Попытка показать календарь без userId");
+            return;
+        }
 
-        const lang = getUserLanguage(userId) || "ru";
-        const t = i18n.getFixedT(lang);
+        try {
+            // Принудительно удаляем сообщение с главным меню
+            if (ctx.callbackQuery?.message?.message_id) {
+                try {
+                    console.debug(`CalendarHandler: удаляем сообщение главного меню ${ctx.callbackQuery.message.message_id}`);
+                    await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+                    console.debug(`CalendarHandler: сообщение главного меню удалено`);
+                } catch (deleteError) {
+                    console.debug(`Не удалось удалить сообщение главного меню:`, deleteError);
+                }
+            }
 
-        const message = `
+            const lang = getUserLanguage(userId) || "ru";
+            const t = i18n.getFixedT(lang);
+
+            const message = `
 📅 <b>${t("calendar_title")}</b>
 
 📌 <b>${t("calendar_grant_application")}:</b>
@@ -33,16 +48,25 @@ export class CalendarHandler extends Handler {
 🗓 ${t("calendar_docs_deadline")}
 `.trim();
 
-        await sendCleanMessage(
-            ctx,
-            userId,
-            message,
-            Markup.inlineKeyboard([
-                [Markup.button.callback(t("back"), "MENU_BACK")]
-            ]),
-            true
-        );
+            await sendCleanMessage(
+                ctx,
+                userId,
+                message,
+                Markup.inlineKeyboard([
+                    [Markup.button.callback(t("back"), "MENU_BACK")]
+                ]),
+                true
+            );
 
-        await ctx.answerCbQuery();
+            await ctx.answerCbQuery();
+            
+        } catch (error) {
+            console.error(`Ошибка при показе календаря для пользователя ${userId}:`, error);
+            try {
+                await ctx.answerCbQuery("Произошла ошибка при показе календаря");
+            } catch (cbError) {
+                console.error("Не удалось ответить на callback query:", cbError);
+            }
+        }
     }
 }
